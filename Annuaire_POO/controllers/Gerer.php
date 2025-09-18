@@ -1,37 +1,108 @@
 <?php
+// controllers/Gerer.php
+require_once 'models/PdoBridge.php';
 
 class Gerer
 {
     private $pdo;
+
     public function __construct()
     {
-        $this->pdo=PdoBridge::getPdoBridge();
+        // Récupère l’instance unique de connexion
+        $this->pdo = PdoBridge::getPdoBridge();
     }
-    public function accueil():void
+
+    // Page d’accueil
+    public function accueil(): void
     {
-        $message="Ce site permet d'enregistrer les participants à une épreuve.";
+        $message = "Ce site permet d'enregistrer les participants à une épreuve.";
         include("views/v_accueil.php");
     }
-    public function lister()
+
+    // Affiche la liste des membres
+    public function lister(): void
     {
-        $les_membres=$this->pdo->getLesMembres();
+        $les_membres = $this->pdo->getLesMembres();
         require 'views/v_listemembres.php';
     }
-    public function choisir():void
+
+    // Affiche le formulaire de saisie
+    public function saisir(): void
+    {
+        require 'views/v_saisirmembre.php';
+    }
+
+    // Insère un nouveau membre
+    public function ajouter(): void
+    {
+        $nom    = $_POST['nom'] ?? '';
+        $prenom = $_POST['prenom'] ?? '';
+
+        // Insère le membre en base
+        $this->pdo->insertMembre($nom, $prenom);
+
+        // Redirection vers la liste
+        header('Location: index.php?uc=Gerer&action=lister');
+        exit;
+    }
+
+    // Affiche la page de choix d’un membre (optionnel)
+    public function choisir(): void
     {
         $les_membres = $this->pdo->getLesMembres();
         require 'views/v_choisirmembre.php';
     }
-   
-    public function modifier():void
+
+    // Modifier un membre existant (optionnel)
+    public function modifier(): void
     {
-        $id=$_REQUEST['id'];
-        $unMembre=$this->pdo->getUnMembre($id);
-        $unMembre=$unMembre[0];
-        require "views/v_saisiemembre.php";
+        $id = $_REQUEST['id'];
+        $unMembre = $this->pdo->getUnMembre($id);
+        $unMembre = $unMembre[0];
+        require "views/v_saisirmembre.php";
+    }
+
+    public function maj(): void
+    {
+        // Récupération des données du formulaire
+        $id     = $_POST['id'] ?? 0;
+        $nom    = $_POST['nom'] ?? '';
+        $prenom = $_POST['prenom'] ?? '';
+
+        // Validation rapide
+        if ($id <= 0 || $nom === '' || $prenom === '') {
+            echo "Erreur : données invalides";
+            return;
+        }
+
+        // Appel de la fonction updateMembre (corrigée avec requête préparée)
+        $this->pdo->updateMembre($id, $nom, $prenom);
+
+        // Redirection vers la liste après mise à jour
+        header('Location: index.php?uc=Gerer&action=lister');
+        exit;
     }
     
-    public function error():void
+    public function supprimer(): void
+    {
+        // Récupération de l'id depuis l'URL
+        $id = $_GET['id'] ?? 0;
+
+        if ($id > 0) {
+            $this->pdo->deleteMembre($id);
+        }
+
+        // Redirection vers la liste après suppression
+        header('Location: index.php?uc=Gerer&action=lister');
+        exit;
+    }
+
+
+
+
+
+    // Page d’erreur
+    public function error(): void
     {
         $_SESSION["message_erreur"] = "Site en construction";
         include("views/404.php");

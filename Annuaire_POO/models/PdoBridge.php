@@ -63,8 +63,35 @@ class PdoBridge
         return 1 + intval($uneLignes["maxi"]);
     }
 
-    public function updateMembre($id,$nom, $prenom){
-        $sql="UPDATE membres SET nom='$nom', prenom='$prenom' WHERE id=$id";
-        $req = PdoBridge::$monPdo->exec($sql);
+   public function updateMembre($id, $nom, $prenom)
+    {
+        $sql = "UPDATE membres SET nom = :nom, prenom = :prenom WHERE id = :id";
+        $stmt = PdoBridge::$monPdo->prepare($sql);
+        return $stmt->execute([
+            ':id'     => $id,
+            ':nom'    => $nom,
+            ':prenom' => $prenom
+        ]);
+    }
+
+    public function insertMembre($nom, $prenom)
+    {
+        // On récupère le prochain id manuellement
+        $id = $this->getMaxId();
+
+        // On insère aussi l’id dans la requête
+        $sql = "INSERT INTO membres (id, nom, prenom) VALUES (:id, :nom, :prenom)";
+        $stmt = PdoBridge::$monPdo->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':nom', $nom);
+        $stmt->bindParam(':prenom', $prenom);
+        return $stmt->execute();
+    }
+
+    public function deleteMembre($id)
+    {
+        $sql = "DELETE FROM membres WHERE id = :id";
+        $stmt = PdoBridge::$monPdo->prepare($sql);
+        return $stmt->execute([':id' => $id]);
     }
 }
